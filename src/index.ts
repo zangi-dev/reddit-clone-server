@@ -8,12 +8,12 @@ const main = async () => {
   const orm = await MikroORM.init(microConfig);
   await orm.getMigrator().up();
 
-  const fork = orm.em.fork();
+  // const fork = orm.em.fork();
   // ! this is not modifying the database, just an instance of the Post class
-  const post = fork.create(Post, { title: "my first post" });
+  // const post = orm.em.create(Post, { title: "my first post" });
 
   // ! this is modifying the database
-  await fork.persistAndFlush(post);
+  // await orm.em.persistAndFlush(post);
 
   // ! native instert need default value for createdAt and updatedAt
   // await fork.nativeInsert(Post, { title: "my second post" });
