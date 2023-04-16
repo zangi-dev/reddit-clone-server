@@ -1,24 +1,34 @@
+import "reflect-metadata";
 import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
-import { Post } from "./entities/Post";
 import microConfig from "./mikro-orm.config";
+import express from "express";
+import { ApolloServer } from "apollo-server-express";
+import { buildSchema } from "type-graphql";
+import { HelloResolver } from "./resolvers/hello";
+import { PostResolver } from "./resolvers/posts";
 
 const main = async () => {
   console.log("__dirname: ", __dirname);
   const orm = await MikroORM.init(microConfig);
   await orm.getMigrator().up();
 
-  // const fork = orm.em.fork();
-  // ! this is not modifying the database, just an instance of the Post class
-  // const post = orm.em.create(Post, { title: "my first post" });
+  const app = express();
 
-  // ! this is modifying the database
-  // await orm.em.persistAndFlush(post);
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [HelloResolver, PostResolver],
+      validate: false,
+    }),
+    context: () => ({ em: orm.em }),
+  });
 
-  // ! native instert need default value for createdAt and updatedAt
-  // await fork.nativeInsert(Post, { title: "my second post" });
+  apolloServer.applyMiddleware({ app });
 
-  // const posts = await fork.find(Post, {});
+  app.listen(4000, () => {
+    console.log("server started on localhost:4000");
+  });
+
   console.log("Hello Worlds!");
 };
 
