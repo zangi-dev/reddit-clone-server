@@ -1,6 +1,7 @@
 import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
 import { Post } from "./entities/Post";
+import { User } from "./entities/User";
 import path from "path";
 
 export default {
@@ -9,7 +10,7 @@ export default {
     pattern: /^[\w-]+\d+\.[tj]s$/,
     // glob: "/^[w-]+d+.[tj]s$/",
   },
-  entities: [Post],
+  entities: [Post, User],
   dbName: "reddit-clone",
   type: "postgresql",
   user: "postgres",
