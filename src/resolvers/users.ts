@@ -8,6 +8,7 @@ import {
   InputType,
   Ctx,
   ObjectType,
+  Query,
 } from "type-graphql";
 import argon2 from "argon2";
 
@@ -38,10 +39,23 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Query(() => User, { nullable: true })
+  async me(@Ctx() { em, req }: MyContext) {
+    // here the middleware decodes the cookie and verifies the signature and check in redis if the useriId is there
+    // if it is there it will set the userId property on the session object
+    // so that we can access it here
+
+    if (!req.session.userId) {
+      return null;
+    }
+    const user = await em.findOne(User, { _id: req.session.userId });
+    return user;
+  }
+
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     if (options.username.length <= 2) {
       return {
@@ -83,13 +97,17 @@ export class UserResolver {
         };
       }
     }
+
+    // storing the user id session
+    req.session.userId = user._id;
+
     return { user };
   }
 
   @Mutation(() => UserResponse)
   async login(
     @Arg("options") options: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const user = await em.findOne(User, { username: options.username });
     if (!user) {
@@ -105,6 +123,11 @@ export class UserResolver {
         errors: [{ field: "password", message: "incorrect password" }],
       };
     }
+    // here thanks to the middleware in index.ts we have access to the session object
+    // and we can set the userId property to the user's id so that it can be saved in redis and sent back
+    // to the client a cookie with the value cryptographically signed
+    req.session.userId = user._id;
+
     return { user };
   }
 }
